@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { configureWindowSecurity } from './security/window_security.js';
 import { registerSystemIPC } from './ipc/system.ipc.js';
 import { registerAuthIPC } from './ipc/auth.ipc.js';
+import { registerGymIPC } from './ipc/gym.ipc.js';
 import { logger } from '../backend/src/utils/logger.js';
 import { testConnection } from '../backend/src/database/connection.js';
 
@@ -35,6 +36,7 @@ async function createWindow() {
   // Register IPC handlers
   registerSystemIPC();
   registerAuthIPC();
+  registerGymIPC();
 
   const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';
 

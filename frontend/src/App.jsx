@@ -1,50 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Shield, 
-  Database, 
-  Cpu, 
-  Key, 
-  Lock, 
   Activity, 
-  CheckCircle2, 
-  AlertTriangle, 
-  RefreshCw, 
   Users, 
-  Server,
-  Layers,
+  CreditCard,
+  Dumbbell,
+  Calendar,
+  Lock, 
+  Key, 
   Terminal,
   LogOut,
-  UserCheck
+  UserCheck,
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/auth/LoginPage';
+import DashboardView from './pages/gym/DashboardView';
+import MembersView from './pages/gym/MembersView';
+import PaymentsView from './pages/gym/PaymentsView';
+import WorkoutsView from './pages/gym/WorkoutsView';
+import ScheduleView from './pages/gym/ScheduleView';
 import { ipcService } from './services/ipcService';
 
 function MainDashboard() {
   const { user, logout, sessionToken } = useAuth();
-  const [status, setStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [currentTab, setCurrentTab] = useState('dashboard');
   const [pingLog, setPingLog] = useState([]);
-  const [error, setError] = useState(null);
-
-  const fetchStatus = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await ipcService.getSystemStatus();
-      if (res.success) {
-        setStatus(res.data);
-      } else {
-        setError(res.error?.message || 'Gagal memuat status sistem');
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [pingLoading, setPingLoading] = useState(false);
 
   const handlePing = async () => {
+    setPingLoading(true);
     const start = performance.now();
     const res = await ipcService.ping();
     const elapsed = Math.round(performance.now() - start);
@@ -58,16 +44,22 @@ function MainDashboard() {
     };
 
     setPingLog(prev => [logEntry, ...prev.slice(0, 9)]);
+    setPingLoading(false);
   };
 
-  useEffect(() => {
-    fetchStatus();
-  }, []);
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard & Statistik', icon: Activity },
+    { id: 'members', label: 'Member Keanggotaan', icon: Users },
+    { id: 'payments', label: 'Pembayaran & Keuangan', icon: CreditCard },
+    { id: 'workouts', label: 'Program Latihan', icon: Dumbbell },
+    { id: 'schedule', label: 'Jadwal & Booking', icon: Calendar },
+    { id: 'diagnostics', label: 'IPC Diagnostics', icon: Terminal }
+  ];
 
   return (
     <div className="flex h-screen w-screen bg-gym-bg text-gray-100 overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 bg-gym-surface border-r border-gym-border flex flex-col justify-between p-4">
+      {/* Sidebar Navigation */}
+      <aside className="w-64 bg-gym-surface border-r border-gym-border flex flex-col justify-between p-4 flex-shrink-0">
         <div>
           {/* Logo Brand */}
           <div className="flex items-center gap-3 px-2 py-3 mb-6">
@@ -76,28 +68,30 @@ function MainDashboard() {
             </div>
             <div>
               <h1 className="font-extrabold text-lg tracking-wider text-white">GYMVAULT</h1>
-              <p className="text-xs font-mono text-gym-accent">v2.0 • Phase 2 Auth Ready</p>
+              <p className="text-xs font-mono text-gym-accent">v2.0 • Phase 3 Operations</p>
             </div>
           </div>
 
           {/* Navigation Items */}
           <nav className="space-y-1">
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gym-accent/10 text-gym-accent font-medium text-sm border border-gym-accent/20 cursor-pointer">
-              <Activity className="w-4 h-4" />
-              <span>Dashboard & Status</span>
-            </div>
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 font-medium text-sm hover:bg-gym-card/60 transition cursor-pointer">
-              <Users className="w-4 h-4 text-gray-400" />
-              <span>Member Operations</span>
-            </div>
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 font-medium text-sm hover:bg-gym-card/60 transition cursor-pointer">
-              <Lock className="w-4 h-4 text-gray-400" />
-              <span>Super Encryption</span>
-            </div>
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 font-medium text-sm hover:bg-gym-card/60 transition cursor-pointer">
-              <Key className="w-4 h-4 text-gray-400" />
-              <span>Security Center</span>
-            </div>
+            {navItems.map(item => {
+              const Icon = item.icon;
+              const isActive = currentTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setCurrentTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs transition ${
+                    isActive
+                      ? 'bg-gym-accent/15 text-gym-accent border border-gym-accent/30 font-bold shadow-md shadow-gym-accent/10'
+                      : 'text-gray-400 hover:text-gray-200 hover:bg-gym-card/60'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </nav>
         </div>
 
@@ -118,12 +112,12 @@ function MainDashboard() {
 
             <div className="text-[10px] text-gray-400 font-mono space-y-0.5 pt-1 border-t border-gym-border/40">
               <div className="flex justify-between">
-                <span>Auth:</span>
-                <span className="text-gym-success font-semibold">Argon2id OK</span>
+                <span>Database:</span>
+                <span className="text-gym-success font-semibold">MySQL InnoDB</span>
               </div>
               <div className="flex justify-between">
-                <span>Permissions:</span>
-                <span className="text-gray-200">{user?.permissions?.length || 18}</span>
+                <span>Encryption:</span>
+                <span className="text-gym-cyan font-semibold">AES-256-GCM</span>
               </div>
             </div>
           </div>
@@ -141,185 +135,44 @@ function MainDashboard() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-y-auto">
         {/* Top Navbar */}
-        <header className="h-16 border-b border-gym-border bg-gym-surface/80 backdrop-blur px-8 flex items-center justify-between">
+        <header className="h-16 border-b border-gym-border bg-gym-surface/80 backdrop-blur px-8 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-gym-accent animate-pulse"></span>
             <h2 className="text-sm font-semibold text-gray-200">
-              GYMVAULT Security Console • User: <span className="text-gym-accent">{user?.username}</span> ({user?.roleName})
+              GYMVAULT Operational Console • Aktor: <span className="text-gym-accent">{user?.username}</span> [{user?.roleName}]
             </h2>
           </div>
 
           <div className="flex items-center gap-3">
             <button 
               onClick={handlePing}
+              disabled={pingLoading}
               className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-lg bg-gym-card border border-gym-border hover:border-gym-accent/50 text-gray-200 hover:text-white transition"
             >
               <Terminal className="w-3.5 h-3.5 text-gym-accent" />
               <span>Test Secure IPC</span>
             </button>
-            <button 
-              onClick={fetchStatus}
-              disabled={loading}
-              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-lg bg-gym-accent text-gym-bg font-semibold hover:bg-gym-accentHover transition shadow-md shadow-gym-accent/20"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>Refresh Status</span>
-            </button>
           </div>
         </header>
 
-        {/* Dashboard Content */}
-        <div className="p-8 space-y-6">
-          {error && (
-            <div className="p-4 rounded-xl bg-gym-danger/10 border border-gym-danger/30 text-gym-danger flex items-center gap-3 text-sm">
-              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Card 1: Database Status */}
-            <div className="p-5 rounded-2xl bg-gym-surface border border-gym-border hover:border-gym-accent/30 transition shadow-lg">
-              <div className="flex items-center justify-between text-gray-400 mb-3">
-                <span className="text-xs font-medium uppercase tracking-wider">MySQL Engine</span>
-                <Database className="w-5 h-5 text-gym-accent" />
-              </div>
-              <div className="text-2xl font-bold text-white mb-1">
-                {status?.database?.connected ? "Online & Siap" : "Offline"}
-              </div>
+        {/* Dynamic View Content */}
+        <div className="p-8 flex-1">
+          {currentTab === 'dashboard' && <DashboardView onNavigate={(tab) => setCurrentTab(tab)} />}
+          {currentTab === 'members' && <MembersView />}
+          {currentTab === 'payments' && <PaymentsView />}
+          {currentTab === 'workouts' && <WorkoutsView />}
+          {currentTab === 'schedule' && <ScheduleView />}
+          {currentTab === 'diagnostics' && (
+            <div className="p-6 rounded-2xl bg-gym-surface border border-gym-border space-y-4">
+              <h3 className="font-bold text-base text-white flex items-center gap-2">
+                <Terminal className="w-5 h-5 text-gym-accent" />
+                Live Secure IPC Log Monitor
+              </h3>
               <p className="text-xs text-gray-400">
-                Database: <span className="font-mono text-gym-accent font-semibold">{status?.database?.dbName || 'gymvault'}</span>
-              </p>
-            </div>
-
-            {/* Card 2: Tables Loaded */}
-            <div className="p-5 rounded-2xl bg-gym-surface border border-gym-border hover:border-gym-accent/30 transition shadow-lg">
-              <div className="flex items-center justify-between text-gray-400 mb-3">
-                <span className="text-xs font-medium uppercase tracking-wider">Tabel Terdaftar</span>
-                <Layers className="w-5 h-5 text-gym-cyan" />
-              </div>
-              <div className="text-2xl font-bold text-white mb-1">
-                {status?.database?.totalTables || 0} / 22
-              </div>
-              <p className="text-xs text-gym-success flex items-center gap-1 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Seluruh 22 skema InnoDB aktif
-              </p>
-            </div>
-
-            {/* Card 3: RBAC Session */}
-            <div className="p-5 rounded-2xl bg-gym-surface border border-gym-border hover:border-gym-accent/30 transition shadow-lg">
-              <div className="flex items-center justify-between text-gray-400 mb-3">
-                <span className="text-xs font-medium uppercase tracking-wider">Status Akses (RBAC)</span>
-                <UserCheck className="w-5 h-5 text-gym-accent" />
-              </div>
-              <div className="text-2xl font-bold text-white mb-1 uppercase">
-                {user?.roleName}
-              </div>
-              <p className="text-xs text-gym-accent font-mono truncate">
-                Token: {sessionToken?.substring(0, 16)}...
-              </p>
-            </div>
-
-            {/* Card 4: Memory & System */}
-            <div className="p-5 rounded-2xl bg-gym-surface border border-gym-border hover:border-gym-accent/30 transition shadow-lg">
-              <div className="flex items-center justify-between text-gray-400 mb-3">
-                <span className="text-xs font-medium uppercase tracking-wider">Memori Heap</span>
-                <Cpu className="w-5 h-5 text-gym-warning" />
-              </div>
-              <div className="text-2xl font-bold text-white mb-1">
-                {status?.systemMemory?.heapUsedMB || 0} MB
-              </div>
-              <p className="text-xs text-gray-400 font-mono">
-                Node {status?.nodeVersion || 'v26'} ({status?.platform || 'win32'})
-              </p>
-            </div>
-          </div>
-
-          {/* Details Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Cryptography Stack Overview */}
-            <div className="lg:col-span-2 p-6 rounded-2xl bg-gym-surface border border-gym-border">
-              <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-gym-accent" />
-                Daftar Kesiapan Modul Kriptografi & Keamanan GYMVAULT
-              </h3>
-
-              <div className="space-y-3">
-                <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-200">1. Authentication (Argon2id)</h4>
-                    <p className="text-xs text-gray-400">Memory 64MB, 3 iterations, 4 threads, Lockout 15 min pada 5x gagal</p>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-success/15 text-gym-success border border-gym-success/30">
-                    Aktif & Terverifikasi
-                  </span>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-200">2. Face Biometric & Liveness</h4>
-                    <p className="text-xs text-gray-400">Embedding 512-d Cosine Similarity (Threshold $\ge 0.650$) + AES-256-GCM Storage</p>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-success/15 text-gym-success border border-gym-success/30">
-                    Aktif & Terverifikasi
-                  </span>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-200">3. USB Hardware Dongle</h4>
-                    <p className="text-xs text-gray-400">HMAC-SHA256 Challenge-Response, Device Binding, & Removal Hotplug Lock</p>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-success/15 text-gym-success border border-gym-success/30">
-                    Aktif & Terverifikasi
-                  </span>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-200">4. Super Encryption (Secure Messaging)</h4>
-                    <p className="text-xs text-gray-400">Vigenere Extended (256 ASCII/Unicode) + AES-256-GCM (96-bit IV, 128-bit Tag)</p>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-cyan/15 text-gym-cyan border border-gym-cyan/30">
-                    Pipeline Ready
-                  </span>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-200">5. File Encryption Vault</h4>
-                    <p className="text-xs text-gray-400">ChaCha20-Poly1305 Chunked Stream Authenticated Storage</p>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-cyan/15 text-gym-cyan border border-gym-cyan/30">
-                    Pipeline Ready
-                  </span>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-200">6. Blockchain Ledger</h4>
-                    <p className="text-xs text-gray-400">SHA-256 Hash Chaining, Canonical Serialization, Checkpoint verification</p>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-cyan/15 text-gym-cyan border border-gym-cyan/30">
-                    Genesis Block Live
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Secure IPC Diagnostic Terminal */}
-            <div className="p-6 rounded-2xl bg-gym-surface border border-gym-border flex flex-col">
-              <h3 className="text-base font-semibold text-white mb-2 flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-gym-accent" />
-                Live IPC Diagnostics
-              </h3>
-              <p className="text-xs text-gray-400 mb-4">
-                Pemeriksaan jembatan isolasi contextBridge renderer $\leftrightarrow$ main process.
+                Pemeriksaan jembatan isolasi dan latensi pengiriman pesan antara renderer dan main process.
               </p>
 
-              <div className="flex-1 bg-gym-bg rounded-xl border border-gym-border p-3 font-mono text-xs overflow-y-auto space-y-2 max-h-72">
+              <div className="bg-gym-bg rounded-xl border border-gym-border p-4 font-mono text-xs overflow-y-auto space-y-2 max-h-96">
                 {pingLog.length === 0 ? (
                   <div className="text-gray-500 text-center py-8">
                     Klik tombol "Test Secure IPC" di atas untuk mengirim pesan uji.
@@ -337,13 +190,8 @@ function MainDashboard() {
                   ))
                 )}
               </div>
-
-              <div className="mt-4 pt-3 border-t border-gym-border text-xs text-gray-400 flex items-center justify-between">
-                <span>Channel Policy:</span>
-                <span className="text-gym-accent font-semibold">Strict Whitelist</span>
-              </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>
