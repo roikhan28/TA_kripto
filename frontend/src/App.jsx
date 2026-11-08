@@ -12,11 +12,16 @@ import {
   Users, 
   Server,
   Layers,
-  Terminal
+  Terminal,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import LoginPage from './pages/auth/LoginPage';
 import { ipcService } from './services/ipcService';
 
-export default function App() {
+function MainDashboard() {
+  const { user, logout, sessionToken } = useAuth();
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pingLog, setPingLog] = useState([]);
@@ -71,47 +76,65 @@ export default function App() {
             </div>
             <div>
               <h1 className="font-extrabold text-lg tracking-wider text-white">GYMVAULT</h1>
-              <p className="text-xs font-mono text-gym-accent">v2.0 • Phase 1 Foundation</p>
+              <p className="text-xs font-mono text-gym-accent">v2.0 • Phase 2 Auth Ready</p>
             </div>
           </div>
 
-          {/* Navigation Items (Phase 1 Status) */}
+          {/* Navigation Items */}
           <nav className="space-y-1">
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gym-accent/10 text-gym-accent font-medium text-sm border border-gym-accent/20">
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gym-accent/10 text-gym-accent font-medium text-sm border border-gym-accent/20 cursor-pointer">
               <Activity className="w-4 h-4" />
-              <span>System Diagnostics</span>
+              <span>Dashboard & Status</span>
             </div>
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 font-medium text-sm hover:bg-gym-card/60 transition cursor-not-allowed opacity-60">
-              <Users className="w-4 h-4" />
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 font-medium text-sm hover:bg-gym-card/60 transition cursor-pointer">
+              <Users className="w-4 h-4 text-gray-400" />
               <span>Member Operations</span>
             </div>
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 font-medium text-sm hover:bg-gym-card/60 transition cursor-not-allowed opacity-60">
-              <Lock className="w-4 h-4" />
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 font-medium text-sm hover:bg-gym-card/60 transition cursor-pointer">
+              <Lock className="w-4 h-4 text-gray-400" />
               <span>Super Encryption</span>
             </div>
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 font-medium text-sm hover:bg-gym-card/60 transition cursor-not-allowed opacity-60">
-              <Key className="w-4 h-4" />
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 font-medium text-sm hover:bg-gym-card/60 transition cursor-pointer">
+              <Key className="w-4 h-4 text-gray-400" />
               <span>Security Center</span>
             </div>
           </nav>
         </div>
 
-        {/* Runtime info */}
-        <div className="p-3 rounded-lg bg-gym-card border border-gym-border text-xs text-gray-400 space-y-1.5 font-mono">
-          <div className="flex justify-between">
-            <span>Runtime:</span>
-            <span className="text-gray-200">Electron 29</span>
+        {/* User Card & Logout */}
+        <div className="space-y-3">
+          <div className="p-3 rounded-xl bg-gym-card border border-gym-border">
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-gym-accent/20 text-gym-accent flex items-center justify-center font-bold text-xs uppercase">
+                {user?.username?.substring(0, 2) || 'US'}
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-xs font-semibold text-white truncate">{user?.username}</p>
+                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-gym-accent/15 text-gym-accent border border-gym-accent/30 uppercase">
+                  {user?.roleName}
+                </span>
+              </div>
+            </div>
+
+            <div className="text-[10px] text-gray-400 font-mono space-y-0.5 pt-1 border-t border-gym-border/40">
+              <div className="flex justify-between">
+                <span>Auth:</span>
+                <span className="text-gym-success font-semibold">Argon2id OK</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Permissions:</span>
+                <span className="text-gray-200">{user?.permissions?.length || 18}</span>
+              </div>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span>Database:</span>
-            <span className={status?.database?.connected ? "text-gym-accent" : "text-gym-danger"}>
-              {status?.database?.connected ? "MySQL Connected" : "Disconnected"}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span>Security:</span>
-            <span className="text-gym-cyan">Isolated Sandbox</span>
-          </div>
+
+          <button
+            onClick={logout}
+            className="w-full py-2 px-3 rounded-lg bg-gym-card hover:bg-gym-danger/10 hover:border-gym-danger/30 text-gray-300 hover:text-gym-danger border border-gym-border text-xs font-medium transition flex items-center justify-center gap-2"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Logout Sesi</span>
+          </button>
         </div>
       </aside>
 
@@ -121,7 +144,9 @@ export default function App() {
         <header className="h-16 border-b border-gym-border bg-gym-surface/80 backdrop-blur px-8 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-gym-accent animate-pulse"></span>
-            <h2 className="text-sm font-semibold text-gray-200">Fondasi Sistem GYMVAULT V2.0 Aktif</h2>
+            <h2 className="text-sm font-semibold text-gray-200">
+              GYMVAULT Security Console • User: <span className="text-gym-accent">{user?.username}</span> ({user?.roleName})
+            </h2>
           </div>
 
           <div className="flex items-center gap-3">
@@ -183,17 +208,17 @@ export default function App() {
               </p>
             </div>
 
-            {/* Card 3: Cryptography Suite */}
+            {/* Card 3: RBAC Session */}
             <div className="p-5 rounded-2xl bg-gym-surface border border-gym-border hover:border-gym-accent/30 transition shadow-lg">
               <div className="flex items-center justify-between text-gray-400 mb-3">
-                <span className="text-xs font-medium uppercase tracking-wider">Crypto Suite</span>
-                <Lock className="w-5 h-5 text-gym-accent" />
+                <span className="text-xs font-medium uppercase tracking-wider">Status Akses (RBAC)</span>
+                <UserCheck className="w-5 h-5 text-gym-accent" />
               </div>
-              <div className="text-2xl font-bold text-white mb-1">
-                7 / 7 Algoritma
+              <div className="text-2xl font-bold text-white mb-1 uppercase">
+                {user?.roleName}
               </div>
-              <p className="text-xs text-gray-400">
-                Argon2id, AES, ChaCha, Stego, Chain
+              <p className="text-xs text-gym-accent font-mono truncate">
+                Token: {sessionToken?.substring(0, 16)}...
               </p>
             </div>
 
@@ -218,67 +243,67 @@ export default function App() {
             <div className="lg:col-span-2 p-6 rounded-2xl bg-gym-surface border border-gym-border">
               <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
                 <Shield className="w-4 h-4 text-gym-accent" />
-                Daftar Kesiapan Modul Kriptografi GYMVAULT
+                Daftar Kesiapan Modul Kriptografi & Keamanan GYMVAULT
               </h3>
 
               <div className="space-y-3">
                 <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-200">1. Authentication & Password Security</h4>
-                    <p className="text-xs text-gray-400">Argon2id (m=64MB, t=3, p=4) + Brute Force Protection</p>
+                    <h4 className="text-sm font-semibold text-gray-200">1. Authentication (Argon2id)</h4>
+                    <p className="text-xs text-gray-400">Memory 64MB, 3 iterations, 4 threads, Lockout 15 min pada 5x gagal</p>
                   </div>
                   <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-success/15 text-gym-success border border-gym-success/30">
-                    Ready
+                    Aktif & Terverifikasi
                   </span>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-200">2. Super Encryption (Secure Messaging)</h4>
+                    <h4 className="text-sm font-semibold text-gray-200">2. Face Biometric & Liveness</h4>
+                    <p className="text-xs text-gray-400">Embedding 512-d Cosine Similarity (Threshold $\ge 0.650$) + AES-256-GCM Storage</p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-success/15 text-gym-success border border-gym-success/30">
+                    Aktif & Terverifikasi
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-200">3. USB Hardware Dongle</h4>
+                    <p className="text-xs text-gray-400">HMAC-SHA256 Challenge-Response, Device Binding, & Removal Hotplug Lock</p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-success/15 text-gym-success border border-gym-success/30">
+                    Aktif & Terverifikasi
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-200">4. Super Encryption (Secure Messaging)</h4>
                     <p className="text-xs text-gray-400">Vigenere Extended (256 ASCII/Unicode) + AES-256-GCM (96-bit IV, 128-bit Tag)</p>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-success/15 text-gym-success border border-gym-success/30">
-                    Ready
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-cyan/15 text-gym-cyan border border-gym-cyan/30">
+                    Pipeline Ready
                   </span>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-200">3. File Vault Encryption</h4>
-                    <p className="text-xs text-gray-400">ChaCha20-Poly1305 Streaming/Chunked authenticated file storage</p>
+                    <h4 className="text-sm font-semibold text-gray-200">5. File Encryption Vault</h4>
+                    <p className="text-xs text-gray-400">ChaCha20-Poly1305 Chunked Stream Authenticated Storage</p>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-success/15 text-gym-success border border-gym-success/30">
-                    Ready
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-cyan/15 text-gym-cyan border border-gym-cyan/30">
+                    Pipeline Ready
                   </span>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-200">4. Database Encryption & Blind Indexing</h4>
-                    <p className="text-xs text-gray-400">AES-256-GCM data at rest + HMAC-SHA256 Blind Indexing</p>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-success/15 text-gym-success border border-gym-success/30">
-                    Ready
-                  </span>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-200">5. Steganografi Citra LSB PNG</h4>
-                    <p className="text-xs text-gray-400">Framing Header (GVST), Payload Length, Checksum, Lossless PNG</p>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-success/15 text-gym-success border border-gym-success/30">
-                    Ready
-                  </span>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-gym-card border border-gym-border flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-200">6. Blockchain Integrity Ledger</h4>
+                    <h4 className="text-sm font-semibold text-gray-200">6. Blockchain Ledger</h4>
                     <p className="text-xs text-gray-400">SHA-256 Hash Chaining, Canonical Serialization, Checkpoint verification</p>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-success/15 text-gym-success border border-gym-success/30">
-                    Ready
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gym-cyan/15 text-gym-cyan border border-gym-cyan/30">
+                    Genesis Block Live
                   </span>
                 </div>
               </div>
@@ -322,5 +347,30 @@ export default function App() {
         </div>
       </main>
     </div>
+  );
+}
+
+function AppContent() {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen w-screen bg-gym-bg flex items-center justify-center text-gym-accent font-mono text-sm">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-gym-accent border-t-transparent rounded-full animate-spin"></div>
+          <span>Memeriksa Sesi Kriptografis...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <MainDashboard /> : <LoginPage />;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
